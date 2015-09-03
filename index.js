@@ -1,8 +1,6 @@
 var Promise = require("bluebird");
 
-var db = null;
-
-var DatabasesCommonPart = new function(){
+var DatabasesCommonPart = function(datastore,db){
 	function process_query(query){
 		if(!query){
 			return {};
@@ -24,7 +22,7 @@ var DatabasesCommonPart = new function(){
 		return new_query;
 	}
 
-	this.find = function(collection_name, query, options, output_options){
+	datastore.find = function(collection_name, query, options, output_options){
 		query = process_query(query);
 		options = options || {};
 		output_options = output_options || {};
@@ -49,7 +47,7 @@ var DatabasesCommonPart = new function(){
 		})
 	}
 
-	this.insert = function(collection_name, to_insert, options){
+	datastore.insert = function(collection_name, to_insert, options){
 		return new Promise(function(resolve, reject){
 			db.collection(collection_name).insert(to_insert, options, function(err, inserted){
 				if (err) {
@@ -61,7 +59,7 @@ var DatabasesCommonPart = new function(){
 		})
 	}
 
-	this.update = function(collection_name, query, new_value){
+	datastore.update = function(collection_name, query, new_value){
 		query = process_query(query);
 		return new Promise(function(resolve, reject){
 			db.collection(collection_name).update(query, new_value, function(err, WriteResult) {
@@ -74,7 +72,7 @@ var DatabasesCommonPart = new function(){
 		})
 	}
 
-	this.remove = function(collection_name, query, just_one){
+	datastore.remove = function(collection_name, query, just_one){
 		query = process_query(query);
 		return new Promise(function(resolve, reject){
 			if(just_one===undefined){
