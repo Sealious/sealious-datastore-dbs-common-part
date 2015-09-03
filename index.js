@@ -1,6 +1,7 @@
 var Promise = require("bluebird");
 
-var DatabasesCommonPart = function(datastore,db){
+var DatabasesCommonPart = function(datastore,private){
+
 	function process_query(query){
 		if(!query){
 			return {};
@@ -27,7 +28,7 @@ var DatabasesCommonPart = function(datastore,db){
 		options = options || {};
 		output_options = output_options || {};
 		return new Promise(function(resolve, reject){
-			var cursor = db.collection(collection_name).find(query, options);
+			var cursor = private.db.collection(collection_name).find(query, options);
 			if (output_options.sort) {
 				cursor.sort(output_options.sort);
 			}
@@ -49,7 +50,7 @@ var DatabasesCommonPart = function(datastore,db){
 
 	datastore.insert = function(collection_name, to_insert, options){
 		return new Promise(function(resolve, reject){
-			db.collection(collection_name).insert(to_insert, options, function(err, inserted){
+			private.db.collection(collection_name).insert(to_insert, options, function(err, inserted){
 				if (err) {
 					reject(err);
 				} else {
@@ -62,7 +63,7 @@ var DatabasesCommonPart = function(datastore,db){
 	datastore.update = function(collection_name, query, new_value){
 		query = process_query(query);
 		return new Promise(function(resolve, reject){
-			db.collection(collection_name).update(query, new_value, function(err, WriteResult) {
+			private.db.collection(collection_name).update(query, new_value, function(err, WriteResult) {
 				if (err) {
 					reject(err);
 				} else {
@@ -79,7 +80,7 @@ var DatabasesCommonPart = function(datastore,db){
 				just_one=0;
 			}
 			just_one = just_one? 1 : 0;
-			db.collection(collection_name).remove(query, just_one, function(err, delete_response) {
+			private.db.collection(collection_name).remove(query, just_one, function(err, delete_response) {
 				if (err) {
 					reject(err);
 				} else {
