@@ -1,6 +1,26 @@
 var Promise = require("bluebird");
+var Sealious = require("sealious");
 
 var DatabasesCommonPart = function(datastore,private){
+
+	datastore.post_start = function(){
+		var resource_types = Sealious.ChipManager.get_chips_by_type("resource_type");
+		var indexes = {}
+		for(var rt_name in resource_types){
+			for(var field_name in resource_types[rt_name].fields){
+				var field = resource_types[rt_name].fields[field_name];
+				if(field.full_text_search_enabled()){
+					indexes["body." + field_name] = "text";
+				}
+			}
+		}
+		return new Promise(function(resolve, reject){
+			private.db.collection("resources").createIndex(indexes, function(){
+				resolve();
+			});
+
+		})
+	}
 
 	function process_query(query){
 		if(!query){
