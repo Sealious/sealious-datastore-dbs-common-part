@@ -31,7 +31,7 @@ var DatabasesCommonPart = function(datastore,private){
 			if(attribute_name=="sealious_id"){
 				new_query[attribute_name] = query[attribute_name];
 			}else{
-				if(query[attribute_name] instanceof Object){
+				if(attribute_name[0]!= "$" && query[attribute_name] instanceof Object){
 					for(var i in query[attribute_name]){
 						new_query[attribute_name + "." + i] = query[attribute_name][i];
 					}
@@ -45,6 +45,9 @@ var DatabasesCommonPart = function(datastore,private){
 
 	datastore.find = function(collection_name, query, options, output_options){
 		query = process_query(query);
+
+		console.log("@", query);
+
 		options = options || {};
 		output_options = output_options || {};
 		return new Promise(function(resolve, reject){
@@ -70,11 +73,11 @@ var DatabasesCommonPart = function(datastore,private){
 
 	datastore.insert = function(collection_name, to_insert, options){
 		return new Promise(function(resolve, reject){
-			private.db.collection(collection_name).insert(to_insert, options, function(err, inserted){
+			private.db.collection(collection_name).insertOne(to_insert, options, function(err, result){
 				if (err) {
 					reject(err);
 				} else {
-					resolve(inserted[0]);
+					resolve(result.ops[0]);
 				}
 			})
 		})
