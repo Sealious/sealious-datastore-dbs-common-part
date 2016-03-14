@@ -5,20 +5,28 @@ var DatabasesCommonPart = function(datastore,private){
 
 	datastore.post_start = function(){
 		var resource_types = Sealious.ChipManager.get_chips_by_type("resource_type");
-		var indexes = {}
+		var indexes = {};
 		for(var rt_name in resource_types){
 			for(var field_name in resource_types[rt_name].fields){
 				var field = resource_types[rt_name].fields[field_name];
-				if(field.full_text_search_enabled()){
-					indexes["body." + field_name] = "text";
-				}
+				indexes["body." + field_name] = field.full_text_search_enabled();
 			}
 		}
-		return new Promise(function(resolve, reject){
-			private.db.collection("resources").createIndex(indexes, function(){
-				resolve();
-			});
+		return Promise.props(indexes)
+		.then(function(indexes){
+			for(var i in indexes){
+				if(indexes[i]){
+					indexes[i] = "text";
+				}else{
+					delete indexes[i];
+				}
+			}
+			return new Promise(function(resolve, reject){
+				private.db.collection("resources").createIndex(indexes, function(){
+					resolve();
+				});
 
+			})
 		})
 	}
 
@@ -45,9 +53,6 @@ var DatabasesCommonPart = function(datastore,private){
 
 	datastore.find = function(collection_name, query, options, output_options){
 		query = process_query(query);
-
-		console.log("@", query);
-
 		options = options || {};
 		output_options = output_options || {};
 		return new Promise(function(resolve, reject){
