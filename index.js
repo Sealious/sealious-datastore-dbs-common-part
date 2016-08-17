@@ -4,31 +4,24 @@ var Sealious = require("sealious");
 var DatabasesCommonPart = function(datastore,private){
 
 	datastore.post_start = function(){
-		var resource_types = Sealious.ChipManager.get_chips_by_type("resource_type");
-		var indexes = {};
-		for(var rt_name in resource_types){
-			for(var field_name in resource_types[rt_name].fields){
-				var field = resource_types[rt_name].fields[field_name];
-				indexes["body." + field_name] = field.full_text_search_enabled();
+		const collection_names = Sealious.ChipManager.get_all_collections();
+		const collections = collection_name.map( name => Sealious.ChipManager.get_chip("collection", collection_name) );
+		Promise.map(collections, function(collection){
+			let field_index = {};
+			for(var field_name in collection.fields){
+				field_index["body." + field_name] = collection.fields[field_name].get_index();
 			}
-		}
-		return Promise.props(indexes)
-		.then(function(indexes){
-			for(var i in indexes){
-				if(indexes[i]){
-					indexes[i] = "text";
-				}else{
-					delete indexes[i];
-				}
-			}
-			return new Promise(function(resolve, reject){
-				private.db.collection("resources").createIndex(indexes, function(){
-					resolve();
-				});
-
-			})
-		})
-	}
+			return Promise.props(field_index)
+			.then(function(collection_indexes){
+				Object.keys(collection_indexes)
+				.filter( key => collection_indexes[key] === false)
+				.forEach( key => delete collection_indexes[key]);
+				return Promise.promisify(private.db.collection(collection.name).createIndex)(collection_indexes);
+			});
+		}).then(function(){
+			Sealious.Logger.log("Created db indexes.");
+		});
+	};
 
 	function process_query(query){
 		if(!query){
@@ -45,9 +38,9 @@ var DatabasesCommonPart = function(datastore,private){
 					}
 				}else{
 					new_query[attribute_name] = query[attribute_name];
-				}				
-			}
-		}
+				};
+			};
+		};
 		return new_query;
 	}
 
