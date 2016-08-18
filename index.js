@@ -38,8 +38,12 @@ var DatabasesCommonPart = function(datastore,_private){
 				new_query[attribute_name] = query[attribute_name];
 			}else{
 				if(query[attribute_name] instanceof Object){
-					for(var i in query[attribute_name]){
-						new_query[attribute_name + "." + i] = query[attribute_name][i];
+					if(attribute_name[0] === "$"){
+						new_query[attribute_name] = query[attribute_name];
+					}else{
+						for(var i in query[attribute_name]){
+							new_query[attribute_name + "." + i] = query[attribute_name][i];
+						}
 					}
 				}else{
 					new_query[attribute_name] = query[attribute_name];
@@ -50,7 +54,7 @@ var DatabasesCommonPart = function(datastore,_private){
 	}
 
 	datastore.find = function(collection_name, query, options, output_options){
-		//query = process_query(query); // - this unnecessarily flattened the query to smth like ''$text.$search':...". Removing until it proves useful
+		query = process_query(query);
 		options = options || {};
 		output_options = output_options || {};
 		var cursor = _private.db.collection(collection_name).find(query, options);
