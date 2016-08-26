@@ -7,7 +7,7 @@ var DatabasesCommonPart = function(datastore,_private){
 	datastore.post_start = function(){
 		const collection_names = Sealious.ChipManager.get_all_collections();
 		const collections = collection_names.map( name => Sealious.ChipManager.get_chip("collection", name) );
-		Promise.map(collections, function(collection){
+		return Promise.map(collections, function(collection){
 			let field_index = {};
 			for(var field_name in collection.fields){
 				field_index["body." + field_name] = collection.fields[field_name].has_index();
