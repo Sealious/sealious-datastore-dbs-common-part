@@ -54,7 +54,7 @@ var DatabasesCommonPart = function(datastore,_private){
 	}
 
 	datastore.find = function(collection_name, query, options, output_options){
-		query = process_query(query);
+		//query = process_query(query); // - needed, ResourceCollection subject handles that now
 		options = options || {};
 		output_options = output_options || {};
 		var cursor = _private.db.collection(collection_name).find(query, options);
