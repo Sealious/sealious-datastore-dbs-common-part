@@ -1,12 +1,11 @@
 "use strict";
 var Promise = require("bluebird");
-var Sealious = require("sealious");
 
-var DatabasesCommonPart = function(datastore,_private){
+var DatabasesCommonPart = function(app, datastore,_private){
 
 	datastore.post_start = function(){
-		const collection_names = Sealious.ChipManager.get_all_collections();
-		const collections = collection_names.map( name => Sealious.ChipManager.get_chip("collection", name) );
+		const collection_names = app.ChipManager.get_all_collections();
+		const collections = collection_names.map( name => app.ChipManager.get_chip("collection", name) );
 		return Promise.map(collections, function(collection){
 			let field_index = {};
 			for(var field_name in collection.fields){
