@@ -1,6 +1,6 @@
 {
-  "name": "sealious-datastore-dbs-common-part",
-  "version": "0.1.0",
+  "name": "sealious-mongo-api-abstract",
+  "version": "0.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
