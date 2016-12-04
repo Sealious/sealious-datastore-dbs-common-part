@@ -7,22 +7,32 @@ var DatabasesCommonPart = function(app, datastore,_private){
 		const collection_names = app.ChipManager.get_all_collections();
 		const collections = collection_names.map( name => app.ChipManager.get_chip("collection", name) );
 		return Promise.map(collections, function(collection){
-			let field_index = {};
+			let indexes = [["sealious_id", 1]];
 			for(var field_name in collection.fields){
-				field_index["body." + field_name] = collection.fields[field_name].has_index();
+				indexes.push(
+					Promise.all(["body." + field_name, collection.fields[field_name].has_index()])
+				);
 			}
-			return Promise.props(field_index)
+			const db_collection = _private.db.collection(collection.name);
+			return Promise.all(indexes)
 			.then(function(collection_indexes){
-				Object.keys(collection_indexes)
-				.filter( key => collection_indexes[key] === false)
-				.forEach( key => delete collection_indexes[key]);
-				if(Object.keys(collection_indexes).length === 0){
-					return Promise.resolve();
-				}else{
-					const db_collection = _private.db.collection(collection.name);
-					return Promise.promisify(db_collection.createIndex)
-					.bind(db_collection)(collection_indexes);
-				}
+				return collection_indexes
+				.filter( e => e[1] !== false)
+				.map(function(index){
+					if(index[1] instanceof Object){
+						const ret = [];
+						for(const i in index[1]){
+							ret.push([index[0] + "." + i, index[1][i]]);
+						}
+						return ret;
+					}else{
+						return [index];
+					}
+				}).reduce((a,b)=>a.concat(b), [])
+				.map(e => {return {[e[0]]: e[1]};});
+			}).each(function(index){
+				return Promise.promisify(db_collection.createIndex)
+				.bind(db_collection)(index);
 			});
 		});
 	};
@@ -53,6 +63,7 @@ var DatabasesCommonPart = function(app, datastore,_private){
 	}
 
 	datastore.find = function(collection_name, query, options, output_options){
+		console.log("FIND", collection_name, query);
 		//query = process_query(query); // - needed, ResourceCollection subject handles that now
 		options = options || {};
 		output_options = output_options || {};
@@ -70,6 +81,7 @@ var DatabasesCommonPart = function(app, datastore,_private){
 	};
 
 	datastore.aggregate = function(collection_name, pipeline, options, output_options){
+		console.log("AGGREGATE", collection_name, JSON.stringify(pipeline));
 		options = options || {};
 		output_options = output_options || {};
 		const cursor = _private.db.collection(collection_name)
