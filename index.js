@@ -69,6 +69,25 @@ var DatabasesCommonPart = function(app, datastore,_private){
 		return Promise.promisify(cursor.toArray).bind(cursor)();
 	};
 
+	datastore.aggregate = function(collection_name, pipeline, options, output_options){
+		options = options || {};
+		output_options = output_options || {};
+		const cursor = _private.db.collection(collection_name)
+		.aggregate(pipeline);
+
+		if (output_options.sort) {
+			cursor.sort(output_options.sort);
+		}
+		if (output_options.skip) {
+			cursor.skip(output_options.skip);
+		}
+		if (output_options.amount) {
+			cursor.limit(output_options.amount);
+		}
+
+		return Promise.promisify(cursor.toArray).bind(cursor)();
+	};
+
 	datastore.insert = function(collection_name, to_insert, options){
 		return Promise.promisify(_private.db.collection(collection_name).insert)
 		.bind(_private.db.collection(collection_name))(to_insert, options)
