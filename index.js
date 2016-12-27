@@ -1,7 +1,14 @@
 "use strict";
 var Promise = require("bluebird");
+const merge = require("merge");
 
-var DatabasesCommonPart = function(app, datastore,_private){
+
+function createIndex(db_collection, index){
+	return Promise.promisify(db_collection.createIndex)
+	.bind(db_collection)(index, {background: true});
+}
+
+var DatabasesCommonPart = function(app, datastore, _private){
 
 	datastore.post_start = function(){
 		const collection_names = app.ChipManager.get_all_collections();
@@ -16,7 +23,7 @@ var DatabasesCommonPart = function(app, datastore,_private){
 			const db_collection = _private.db.collection(collection.name);
 			return Promise.all(indexes)
 			.then(function(collection_indexes){
-				return collection_indexes
+				const all_indexes = collection_indexes
 				.filter( e => e[1] !== false)
 				.map(function(index){
 					if(index[1] instanceof Object){
@@ -28,11 +35,29 @@ var DatabasesCommonPart = function(app, datastore,_private){
 					}else{
 						return [index];
 					}
-				}).reduce((a,b)=>a.concat(b), [])
-				.map(e => {return {[e[0]]: e[1]};});
-			}).each(function(index){
-				return Promise.promisify(db_collection.createIndex)
-				.bind(db_collection)(index);
+				}).reduce((a,b)=>a.concat(b), []);
+				
+				const non_text_indexes = all_indexes.filter(e=>e[1]!=="text").map(e=>{return {[e[0]]: e[1]};});
+				
+				// if multiple fields take part in full text search, we need to combine them into a single index.
+
+				let text_indexes = [all_indexes.filter(e=>e[1]==="text").reduce((a,b) => merge(true, a, {[b[0]]: b[1]}), {} )];
+				if(Object.keys(text_indexes[0]).length==0){
+					text_indexes = [];
+				}
+				
+				const merged_indexes = text_indexes.concat(non_text_indexes);
+				
+				return merged_indexes;
+			})
+			.each(function(index){
+				return createIndex(db_collection, index)
+				.catch((e)=>e.code==85, function(error){
+					const index_name = error.message.match(/name: \"([^\"]+)\"/g)[1].replace('name: "', "").replace('"', '');
+					return Promise.promisify(db_collection.dropIndex)
+					.bind(db_collection)(index_name)
+					.then(() => createIndex(db_collection, index));
+				});
 			});
 		});
 	};
@@ -63,7 +88,7 @@ var DatabasesCommonPart = function(app, datastore,_private){
 	}
 
 	datastore.find = function(collection_name, query, options, output_options){
-		console.log("FIND", collection_name, query);
+		//console.log("FIND", collection_name, query);
 		//query = process_query(query); // - needed, ResourceCollection subject handles that now
 		options = options || {};
 		output_options = output_options || {};
@@ -81,6 +106,7 @@ var DatabasesCommonPart = function(app, datastore,_private){
 	};
 
 	datastore.aggregate = function(collection_name, pipeline, options, output_options){
+		console.log("aggregate!", JSON.stringify(pipeline));
 		options = options || {};
 		output_options = output_options || {};
 		const cursor = _private.db.collection(collection_name)

@@ -9,6 +9,7 @@
   "author": "",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "bluebird": "^2.9.9"
+    "bluebird": "^2.9.9",
+    "merge": "^1.2.0"
   }
 }
