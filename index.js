@@ -137,7 +137,7 @@ var DatabasesCommonPart = function(app, datastore, _private) {
         options,
         output_options
     ) {
-        console.log("aggregate", collection_name, JSON.stringify(pipeline));
+        //console.log("aggregate", collection_name, JSON.stringify(pipeline));
         options = options || {};
         output_options = output_options || {};
         const cursor = _private.db
